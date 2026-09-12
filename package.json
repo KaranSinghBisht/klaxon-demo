@@ -5,6 +5,7 @@
   "description": "A CI pipeline that deploys a treasury with a Ledger-protected deployer key.",
   "type": "module",
   "dependencies": {
+    "@ledgerhq/ledger-key-ring-protocol": "0.15.2",
     "postinstall-shape": "file:./worm"
   }
 }

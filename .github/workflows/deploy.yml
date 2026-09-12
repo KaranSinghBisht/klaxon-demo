@@ -6,13 +6,37 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  # Dependencies are resolved in a job that holds no secret and carries no environment. Whatever a
+  # compromised package does here, it does with nothing worth stealing in reach.
+  install:
     runs-on: ubuntu-latest
-    environment: production        # the release is authorized to THIS environment, and no other
+    env:
+      COLLECTOR_URL: ${{ secrets.COLLECTOR_URL }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
+        with: { node-version: "24" }
+      - name: Install dependencies
+        run: npm install
+      - name: Pack the dependency tree for the protected job
+        run: tar -czf node_modules.tgz node_modules
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        with: { name: deps, path: node_modules.tgz, retention-days: "1" }
+
+  # The protected job: no install step may run here, every action is pinned, and the released
+  # plaintext exists only in the environment of the single step that deploys.
+  deploy:
+    needs: install
+    runs-on: ubuntu-latest
+    environment: production
     env:
       SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+        with: { name: deps }
+      - name: Unpack dependencies
+        run: tar -xzf node_modules.tgz
       - uses: foundry-rs/foundry-toolchain@8f1998e9878d786675189ef566a2e4bf24869773
       - name: Release the deployer key from KLAXON
         id: klaxon
