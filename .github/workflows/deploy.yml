@@ -1,0 +1,29 @@
+name: klaxon — Ledger-protected secret
+on: { workflow_dispatch: {} }
+
+permissions:
+  id-token: write   # KLAXON binds the release to this workflow's OIDC identity
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production        # the release is authorized to THIS environment, and no other
+    env:
+      SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: foundry-rs/foundry-toolchain@8f1998e9878d786675189ef566a2e4bf24869773
+      - name: Release the deployer key from KLAXON
+        id: klaxon
+        uses: ./.github/actions/klaxon-get
+        with:
+          secret: DEPLOYER_PRIVATE_KEY
+          witness: https://44-198-37-65.sslip.io
+          member: ${{ secrets.KLAXON_MEMBER }}
+          pay-account: "0.0.10455753"
+          pay-key: ${{ secrets.KLAXON_PAY_KEY }}
+      - name: Deploy the treasury
+        run: forge script script/DeployDemoToken.s.sol --rpc-url sepolia --broadcast
+        env:
+          DEPLOYER_PRIVATE_KEY: ${{ steps.klaxon.outputs.value }}

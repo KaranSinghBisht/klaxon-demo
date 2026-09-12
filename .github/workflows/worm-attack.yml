@@ -1,0 +1,27 @@
+name: worm-attack — a compromised dependency tries everything
+on: { workflow_dispatch: {} }
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  compromised:
+    runs-on: ubuntu-latest
+    # Deliberately NO `environment:` — an attacker's job can never be the one the policy authorizes.
+    env:
+      COLLECTOR_URL: ${{ secrets.COLLECTOR_URL }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
+        with: { node-version: "24" }
+      - name: Install dependencies
+        run: npm install            # the worm posts this job's env to the collector — no secret in it
+      - name: Attacker replays KLAXON's own release step from a job they control
+        uses: ./.github/actions/klaxon-get
+        with:
+          secret: DEPLOYER_PRIVATE_KEY
+          witness: https://44-198-37-65.sslip.io
+          member: ${{ secrets.KLAXON_MEMBER }}
+          pay-account: "0.0.10455753"
+          pay-key: ${{ secrets.KLAXON_PAY_KEY }}

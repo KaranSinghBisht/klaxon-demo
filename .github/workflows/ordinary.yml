@@ -1,0 +1,21 @@
+name: ordinary — plain CI secret
+on: { workflow_dispatch: {} }
+
+# The world as it is: DEPLOYER_PRIVATE_KEY is an ordinary GitHub Actions secret, in the job's
+# environment for every step — including the one where a compromised dependency runs.
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOYER_PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+      SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+      COLLECTOR_URL: ${{ secrets.COLLECTOR_URL }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
+        with: { node-version: "24" }
+      - name: Install dependencies
+        run: npm install            # runs the worm's postinstall; it reads the env and finds the key
+      - uses: foundry-rs/foundry-toolchain@8f1998e9878d786675189ef566a2e4bf24869773
+      - name: Deploy the treasury
+        run: forge script script/DeployDemoToken.s.sol --rpc-url sepolia --broadcast

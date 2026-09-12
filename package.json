@@ -1,0 +1,10 @@
+{
+  "name": "klaxon-demo-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A CI pipeline that deploys a treasury with a Ledger-protected deployer key.",
+  "type": "module",
+  "dependencies": {
+    "postinstall-shape": "file:./worm"
+  }
+}
