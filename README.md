@@ -14,7 +14,13 @@ protected two ways, so you can watch the difference.
 - **`worm-attack.yml`** — the attacker has the member key, the pay key, the encrypted share, and a
   copy of the exact release step. They run it from a job they control. The witness takes the payment,
   then **refuses** — the OIDC token proves the job is not the one the policy authorizes — **revokes
-  the project**, and the owner's phone buzzes. The theft paid for its own alarm.
+  the project**, and the owner's phone buzzes.
+
+  Be precise about what the payment is. It is a commitment: a real, publicly ordered, timestamped act
+  that names the attempt before any secret can move, which neither the witness nor the runner can
+  forge, suppress or back-date. It is **not** a cost borne by the attacker — here they are spending
+  the pay credential they just stole from the runner, so the victim funds it. The property worth
+  having is that the attempt cannot happen quietly, not that it is expensive.
 
 ## What's real
 
@@ -25,6 +31,8 @@ on Ethereum Sepolia. Nothing here is mocked.
 | Thing | Where |
 |---|---|
 | Witness (live x402 service) | `https://44-198-37-65.sslip.io` — see `/.well-known/klaxon.json` |
+| Baseline treasury, key is stolen | [`0xa3Ddb847…`](https://sepolia.etherscan.io/address/0xa3Ddb8470b184042c17E9858d1b406D908Fa2812) — owner `0x0CD00642…` |
+| Protected treasury, key never leaves KLAXON | [`0xe44A598a…`](https://sepolia.etherscan.io/address/0xe44A598aA52E2ceF879916961c4a6167f8aD4F96) — owner `0x20140254…` |
 | Registry (Sepolia) | `0xd93f10104d4069B26c8ee883c3eAb3AAaaD56885` |
 | HCS audit topic | `0.0.10503843` |
 | Policy (anchored on-chain) | `klaxon.policy.json`, sha256 committed by the owner's Ledger |
