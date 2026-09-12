@@ -1,0 +1,12 @@
+{
+  "name": "klaxon-get-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Runtime dependency of the KLAXON action. Deliberately does NOT depend on the application's package.json: the protected job must never import the tree a compromised dependency can reach.",
+  "dependencies": {
+    "@ledgerhq/ledger-key-ring-protocol": "0.15.2"
+  },
+  "overrides": {
+    "@ledgerhq/live-dmk-speculos": "file:../../../stubs/empty"
+  }
+}

@@ -6,27 +6,26 @@ permissions:
   contents: read
 
 jobs:
-  # Dependencies are resolved in a job that holds no secret and carries no environment. Whatever a
-  # compromised package does here, it does with nothing worth stealing in reach.
-  install:
+  # The protected job needs one thing at runtime: the Ledger Key Ring SDK. It is resolved HERE, in
+  # a job that holds no secret, from a package.json that describes only the action's own runtime
+  # and deliberately does not depend on the application's tree — so nothing a compromised
+  # application dependency can reach is ever carried into the job that holds the plaintext.
+  # --ignore-scripts because a dependency of the release path has no business running install hooks.
+  action-deps:
     runs-on: ubuntu-latest
-    env:
-      COLLECTOR_URL: ${{ secrets.COLLECTOR_URL }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
         with: { node-version: "24" }
-      - name: Install dependencies
-        run: npm install
-      - name: Pack the dependency tree for the protected job
-        run: tar -czf node_modules.tgz node_modules
+      - name: Resolve the Key Ring SDK (no application dependencies, no install scripts)
+        run: npm install --prefix .github/actions/klaxon-get --ignore-scripts --no-audit --no-fund
+      - name: Pack it
+        run: tar -czf action-deps.tgz .github/actions/klaxon-get/node_modules
       - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
-        with: { name: deps, path: node_modules.tgz, retention-days: "1" }
+        with: { name: action-deps, path: action-deps.tgz, retention-days: "1" }
 
-  # The protected job: no install step may run here, every action is pinned, and the released
-  # plaintext exists only in the environment of the single step that deploys.
   deploy:
-    needs: install
+    needs: action-deps
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -34,9 +33,9 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
-        with: { name: deps }
-      - name: Unpack dependencies
-        run: tar -xzf node_modules.tgz
+        with: { name: action-deps }
+      - name: Unpack the Key Ring SDK
+        run: tar -xzf action-deps.tgz
       - uses: foundry-rs/foundry-toolchain@8f1998e9878d786675189ef566a2e4bf24869773
       - name: Release the deployer key from KLAXON
         id: klaxon
@@ -47,6 +46,9 @@ jobs:
           member: ${{ secrets.KLAXON_MEMBER }}
           pay-account: "0.0.10455753"
           pay-key: ${{ secrets.KLAXON_PAY_KEY }}
+      # The released plaintext reaches exactly one step, as its env. Note what this does NOT claim:
+      # GitHub step outputs are readable by any later step in the same job, so "one step" is a
+      # property of the workflow the operator writes, not something the witness can enforce.
       - name: Deploy the treasury
         run: forge script script/DeployDemoToken.s.sol --rpc-url sepolia --broadcast
         env:
