@@ -7,7 +7,11 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
-      DEPLOYER_PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+      # A key of its very own. The baseline and the protected pipeline deploy SEPARATE treasuries
+      # with SEPARATE keys, so that "the protected treasury never moved" means something: the key
+      # stolen here has no authority over it. Sharing one key would have made the comparison
+      # worthless, which is what the first cut of this demo accidentally did.
+      DEPLOYER_PRIVATE_KEY: ${{ secrets.ORDINARY_DEPLOYER_KEY }}
       SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
       COLLECTOR_URL: ${{ secrets.COLLECTOR_URL }}
     steps:
